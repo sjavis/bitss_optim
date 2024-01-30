@@ -9,79 +9,72 @@ MODULE bfgs_logic
   ! These steps have been modified from the pele code to run in pure fortran,
   ! lbfgs_maths has been used directly.
   USE potential
-  implicit none
+  IMPLICIT NONE
 
   ! Result Values
-  integer :: n_steps, point, CONV_COUNT, n_grad
+  INTEGER :: n_steps, point, CONV_COUNT, n_grad
 
   ! Internal Values
-  double precision, private, allocatable :: s(:,:), y(:,:), p(:), stp(:)
-  double precision, private, allocatable :: x0(:), g0(:)
-  double precision, private :: e0, e_initial
+  DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: s(:,:), y(:,:), p(:), stp(:)
+  DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:)
+  DOUBLE PRECISION, PRIVATE :: e0, e_initial
 
 
   CONTAINS
 
 
     SUBROUTINE allocate_quench()
-      implicit none
-
-      if (allocated(stp))   deallocate(stp);   allocate(stp(N))
-      if (allocated(x0))    deallocate(x0);    allocate(x0(N))
-      if (allocated(g0))    deallocate(g0);    allocate(g0(N))
-      if (allocated(s))     deallocate(s);     allocate(s(n,m))
-      if (allocated(y))     deallocate(y);     allocate(y(n,m))
-      if (allocated(p))     deallocate(p);     allocate(p(m))
+      IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(N))
+      IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(N))
+      IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(N))
+      IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(n,m))
+      IF (ALLOCATED(y))     DEALLOCATE(y);     ALLOCATE(y(n,m))
+      IF (ALLOCATED(p))     DEALLOCATE(p);     ALLOCATE(p(m))
     END SUBROUTINE allocate_quench
 
 
-    SUBROUTINE quench()
+    SUBROUTINE minimise(coords)
+      DOUBLE PRECISION, INTENT(INOUT) :: COORDS(2*NOPT)
       ! Run the minimiser.
       ! Keep iterating until we reach preset limit or reach
       ! convergence.
 
-      call allocate_quench()
+      CALL allocate_quench()
       lbfgs_iter = 1
 
-      call compute_ev_midlayer()
-      rms = norm2(g)/sqrt(dble(n))
+      CALL bitss_eg(coords, e, g)
+      rms = NORM2(g)/SQRT(DBLE(n))
 
       e_initial = e
 
-      do while ((lbfgs_iter <= max_iterations) .and. (.not. is_stop_criteron()))
-        call one_iteration()
+      DO WHILE ((lbfgs_iter <= max_iterations) .and. (.not. is_stop_criteron()))
+        IF (ramp_stat) CALL ramp(lbfgs_iter)
+
+        ! Assign copies
+        e0 = e
+        x0 = x
+        g0 = g
+
+        ! Get the search direction
+        point = mod(lbfgs_iter-1, m) + 1
+        call get_step()
+        ! Make sure the step is sensible and take it
+        call adjust_step_size()
+
+        ! Update the working arrays
+        s(:,point) = x - x0
+        y(:,point) = g - g0
+        p(point) = 1 / dot_product(y(:,point), s(:,point))
+
+        rms = norm2(g)/sqrt(dble(n))
         lbfgs_iter = lbfgs_iter + 1
       end do
-    END SUBROUTINE quench
+    END SUBROUTINE minimise
 
 
-    SUBROUTINE one_iteration()
-      ! Take a single step in the L-BFGS algorithm
-      character(len=1024) :: filename
-      integer :: ispt, iypt
-
-      if (ramp_stat) call ramp(lbfgs_iter)
-
-      ! Assign copies
-      e0 = e
-      x0 = x
-      g0 = g
-
-      ! Get the search direction
-      point = mod(lbfgs_iter-1, m) + 1
-      call get_step()
-      ! Make sure the step is sensible and take it
-      call adjust_step_size()
-
-      ! Update the working arrays
-      s(:,point) = x - x0
-      y(:,point) = g - g0
-      p(point) = 1 / dot_product(y(:,point), s(:,point))
-
-      rms = norm2(g)/sqrt(dble(n))
-      ! print*, lbfgs_iter, rms
-
+    SUBROUTINE log_fn()
       ! Print log message
+      character(len=1024) :: filename
       if (debug .and. (mod(lbfgs_iter,lbfgs_log_iter)==0)) then
         write(filename,'(A,A)') trim(output_dir), '/min.log'
         open(1, file=filename, access='append')
@@ -89,7 +82,7 @@ MODULE bfgs_logic
           'Energy   ',e,'   RMS   ', rms, '   after step', lbfgs_iter , '  of size  ', norm2(x-x0)
         close(1)
       end if
-    END SUBROUTINE one_iteration
+    END SUBROUTINE log_fn
 
 
     SUBROUTINE get_step()
