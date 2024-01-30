@@ -6,8 +6,10 @@ MODULE bitss_lbfgs
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:), g(:)
   DOUBLE PRECISION, PRIVATE :: e, e0, e_initial, rms
 
-  USE KEY, ONLY : BITSSLBFGS_M
-  ASSOCIATE(n=>2*NOPT, m=>BITSSLBFGS_M)
+  USE COMMONS, ONLY : nopt
+  USE KEY, ONLY : bitsslbfgs_m
+  USE BITSSMODULE, ONLY : bitss_e, bitss_eg
+  ASSOCIATE(n=>2*nopt, m=>bitsslbfgs_m)
 
 
   CONTAINS
@@ -24,8 +26,9 @@ MODULE bitss_lbfgs
     END SUBROUTINE allocate_quench
 
 
-    SUBROUTINE minimise(coords)
+    FUNCTION minimise(coords)
       DOUBLE PRECISION, INTENT(INOUT) :: COORDS(n)
+      LOGICAL, INTENT(OUT) :: minimise
       USE KEY, ONLY : BITSSLBFGS_MAXITER
       DOUBLE PRECISION :: e, g(n)
       CALL allocate_quench()
@@ -55,7 +58,8 @@ MODULE bitss_lbfgs
         rms = NORM2(g)/SQRT(DBLE(n))
         lbfgs_iter = lbfgs_iter + 1
       END DO
-    END SUBROUTINE minimise
+      minimise = check_convergence()
+    END FUNCTION minimise
 
 
     SUBROUTINE get_step()
