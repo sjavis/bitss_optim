@@ -94,7 +94,7 @@ MODULE KEY
       DOUBLE PRECISION :: GThomsonSigma, GThomsonRho, GThomsonSigma1, GThomsonSigma2
 ! jp908> Gthomson binary yukawa terms
       DOUBLE PRECISION :: GThomsonRepul, GThomsonYukawa, GThomsonCharge1, GThomsonCharge2
-      
+
       LOGICAL :: MACHINE=.FALSE., NEBMIND=.TRUE.
 
       DOUBLE PRECISION :: TRAD, RESIZE, JZ, PUSHOFF, TOLD, TOLE, PCUT, DAMP, RADIUS, TWOEVAL, PVCONV, PVTOL, &
@@ -142,7 +142,7 @@ MODULE KEY
       DOUBLE PRECISION :: PCUTOFF,PYA11(3),PYA21(3),PYA12(3),PYA22(3),PEPSILON1(3),PSCALEFAC1(2),PSCALEFAC2(2), &
      &                     PEPSILONATTR(2),PSIGMAATTR(2), PYOVERLAPTHRESH, LJSITECOORDS(3), LJGSITESIGMA, LJGSITEEPS, &
      &                     PYLOCALSTEP(2),PYCFTHRESH,PYGRAVITYC1,PYGRAVITYC2,PERCCUT
- 
+
       DOUBLE PRECISION, ALLOCATABLE :: PYADDEPS(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: SHIFTL(:)
       LOGICAL, ALLOCATABLE :: UNIAXARRAY(:)
@@ -167,8 +167,8 @@ MODULE KEY
 
       INTEGER :: SEQ(500),NUMGLY
       DOUBLE PRECISION :: FINCORD(150,3,3,3)
-      INTEGER :: NRES_AMH_TEMP 
-     
+      INTEGER :: NRES_AMH_TEMP
+
       INTEGER PROCNT, FINNMRSS, FINNUMCRR, FINNUMPRR, FINNQUENCH
 
       CHARACTER(LEN=80) :: SYS, FILTHSTR, BOWMANDIR
@@ -326,7 +326,7 @@ MODULE KEY
       REAL(KIND=REAL64), DIMENSION(6) :: RMSSHIFT
       REAL(KIND=REAL64), DIMENSION(3,7)  :: HYDROPAR
       REAL(KIND=REAL64), ALLOCATABLE :: OBSCHEMSHIFT(:,:),ENERGYCAM(:), SHIFTDIF(:)
-      REAL(KIND=REAL64), ALLOCATABLE :: FORCEX(:), FORCEY(:), FORCEZ(:) 
+      REAL(KIND=REAL64), ALLOCATABLE :: FORCEX(:), FORCEY(:), FORCEZ(:)
       LOGICAL COUT
       CHARACTER(LEN=200) :: SVNROOT, CSPATH, SHIFTFILE
       CHARACTER(LEN=10) :: CSVERSION
@@ -360,7 +360,7 @@ MODULE KEY
       DOUBLE PRECISION :: MIEF_BOX(3), MIEF_RCUT
       DOUBLE PRECISION, ALLOCATABLE :: MIEF_EPS(:), MIEF_SIG(:), &
            MIEF_SITES(:,:), MIEF_U_RCUT(:), MIEF_DUDR_RCUT(:)
-      
+
       DOUBLE PRECISION, ALLOCATABLE ::  QCIXYZ(:)
 ! AMBER 12 and 20 variables
       LOGICAL :: AMBER12T, AMBER20T
@@ -408,8 +408,8 @@ MODULE KEY
       REAL(KIND = REAl64) :: PH = 7.0     !PH value used for titration
 
 ! HB for HiRE
-      LOGICAL           :: RNAHBT = .FALSE.          !detect h-bonds and save 
-      LOGICAL           :: HBSAVET = .FALSE.         !save h-bonds at step 
+      LOGICAL           :: RNAHBT = .FALSE.          !detect h-bonds and save
+      LOGICAL           :: HBSAVET = .FALSE.         !save h-bonds at step
       INTEGER           :: HBNSTEPS = 1              !frequency for saving h-bonds
 
 ! SAXS for HiRE
@@ -418,7 +418,7 @@ MODULE KEY
       LOGICAL           :: SAXSFORCET = .FALSE.      !compute SASX force at MC transition?
       LOGICAL           :: SAXSMODULT = .FALSE.      !modulate SAXS force with decreasing and periodic factor?
       REAL(KIND=REAL64) :: SAXSINVSIG = 2.5          !broadness of the periodic modulation
-      REAL(KIND=REAL64) :: SAXSWAVE = 100.0          !length of the decreasing modulation 
+      REAL(KIND=REAL64) :: SAXSWAVE = 100.0          !length of the decreasing modulation
       REAL(KIND=REAL64) :: SAXSOFFI = 0.0D0          !step variable for periodic modulation
       REAL(KIND=REAL64) :: SAXSMODI = 1.0D0          !step variable for decreasing modulation
       LOGICAL           :: SAXSPRINT = .FALSE.       !print curves and scores to unit
@@ -457,7 +457,7 @@ MODULE KEY
       DOUBLE PRECISION, ALLOCATABLE :: QCCOEFFG(:,:), QCCOEFFGSAVE(:,:)
       DOUBLE PRECISION, ALLOCATABLE :: QCCOEFFGFIN(:,:) ! for double-ended searches
       DOUBLE PRECISION, ALLOCATABLE :: QCCOEFFGTS(:,:), QCCOEFFGPLUS(:,:), QCCOEFFGMINUS(:,:)
-!  
+!
 !  count QCHRM calls for input file adjustment
 !
       INTEGER :: QCHEMCALLS=0
@@ -499,7 +499,7 @@ MODULE KEY
 
 ! kr366> OPEP and HiRE QCI setup
       INTEGER :: NBONDSOPEP = 0
-      INTEGER, ALLOCATABLE :: BONDSOPEP(:,:)      
+      INTEGER, ALLOCATABLE :: BONDSOPEP(:,:)
 
 ! dw34> atoms to align or linear interp for QCI
       INTEGER, ALLOCATABLE :: QCIALIGNATOMS(:), QCILINEARATOMS(:)
@@ -508,6 +508,9 @@ MODULE KEY
       LOGICAL :: BITSST
       INTEGER :: BITSSMAXITER
       REAL(KIND = REAL64) :: BITSSSTEP, BITSSSTOP, BITSSALPHA, BITSSBETA
+! DEMAX, Convergence, m (histsize), max_iter
+      INTEGER :: BITSS_m, BITSS_maxiter
+      REAL(KIND = REAL64) :: BITSS_dEmax, BITSS_conv
 
 CONTAINS
 
@@ -698,5 +701,5 @@ CONTAINS
          IF (ALLOCATED(QCILINEARATOMS)) DEALLOCATE(QCILINEARATOMS)
 
       END SUBROUTINE KEY_DEALLOCATE
-      
+
 END MODULE KEY
