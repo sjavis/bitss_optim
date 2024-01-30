@@ -10,33 +10,32 @@ MODULE bitss_lbfgs
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: s(:,:), y(:,:), p(:), stp(:)
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:), g(:)
   DOUBLE PRECISION, PRIVATE :: e, e0, e_initial, rms
-  ASSOCIATE(n=>2*nopt, m=>bitsslbfgs_m)
 
 
   CONTAINS
 
 
     SUBROUTINE allocate_quench()
-      IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(n))
-      IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(n))
-      IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(n))
-      IF (ALLOCATED(g))     DEALLOCATE(g);     ALLOCATE(g(n))
-      IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(n, m))
-      IF (ALLOCATED(y))     DEALLOCATE(y);     ALLOCATE(y(n, m))
-      IF (ALLOCATED(p))     DEALLOCATE(p);     ALLOCATE(p(m)) ! rho
+      IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(2*nopt))
+      IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(2*nopt))
+      IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(2*nopt))
+      IF (ALLOCATED(g))     DEALLOCATE(g);     ALLOCATE(g(2*nopt))
+      IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(2*nopt, 2*BITSSLBFGS_m))
+      IF (ALLOCATED(y))     DEALLOCATE(y);     ALLOCATE(y(2*nopt, 2*BITSSLBFGS_m))
+      IF (ALLOCATED(p))     DEALLOCATE(p);     ALLOCATE(p(2*BITSSLBFGS_m)) ! rho
     END SUBROUTINE allocate_quench
 
 
     FUNCTION minimise(coords)
       USE KEY, ONLY : BITSSLBFGS_MAXITER
-      DOUBLE PRECISION, INTENT(INOUT) :: COORDS(n)
+      DOUBLE PRECISION, INTENT(INOUT) :: COORDS(2*nopt)
       LOGICAL, INTENT(OUT) :: minimise
-      DOUBLE PRECISION :: e, g(n)
+      DOUBLE PRECISION :: e, g(2*nopt)
       CALL allocate_quench()
 
       x = coords
       CALL bitss_eg(x, e, g)
-      rms = NORM2(g)/SQRT(DBLE(n))
+      rms = NORM2(g)/SQRT(DBLE(2*nopt))
       e_initial = e
 
       lbfgs_iter = 1
@@ -46,7 +45,7 @@ MODULE bitss_lbfgs
         x0 = x
         g0 = g
 
-        point = MOD(lbfgs_iter-1, m) + 1
+        point = MOD(lbfgs_iter-1, 2*BITSSLBFGS_m) + 1
         CALL get_step() ! Get the search direction
         CALL adjust_step_size() ! Perform a simple linesearch
         CALL bitss_eg(x, e, g)
@@ -56,7 +55,7 @@ MODULE bitss_lbfgs
         y(:,point) = g - g0
         p(point) = 1 / DOT_PRODUCT(y(:,point), s(:,point))
 
-        rms = NORM2(g)/SQRT(DBLE(n))
+        rms = NORM2(g)/SQRT(DBLE(2*nopt))
         lbfgs_iter = lbfgs_iter + 1
       END DO
       minimise = check_convergence()
@@ -65,28 +64,28 @@ MODULE bitss_lbfgs
 
     SUBROUTINE get_step()
       INTEGER :: j1, j2, bound
-      DOUBLE PRECISION :: H0, q(n), a(m), b
+      DOUBLE PRECISION :: H0, q(2*nopt), a(2*BITSSLBFGS_m), b
 
       IF (lbfgs_iter == 1) THEN
         H0 = 1 / NORM2(g)
         stp = - H0 * g
 
       ELSE
-        bound = MIN(lbfgs_iter-1, m)
+        bound = MIN(lbfgs_iter-1, 2*BITSSLBFGS_m)
 
-        j2 = MERGE(point-1, m, point>1)
+        j2 = MERGE(point-1, 2*BITSSLBFGS_m, point>1)
         H0 = 1 / (p(j2) * SUM(y(:,j2)**2))
 
         q = g
         DO j1 = point-1, point-bound, -1
-          j2 = MOD(j1-1+m, m) + 1
+          j2 = MOD(j1-1+2*BITSSLBFGS_m, 2*BITSSLBFGS_m) + 1
           a(j2) = p(j2) * DOT_PRODUCT(s(:,j2), q)
           q = q - a(j2) * y(:,j2)
         END DO
         stp = H0 * q
 
         DO j1 = point-bound, point-1
-          j2 = MOD(j1-1+m, m) + 1
+          j2 = MOD(j1-1+2*BITSSLBFGS_m, 2*BITSSLBFGS_m) + 1
           b = p(j2) * DOT_PRODUCT(y(:,j2), stp)
           stp = stp + s(:,j2) * (a(j2) - b)
         END DO
@@ -118,8 +117,8 @@ MODULE bitss_lbfgs
 
 
     LOGICAL FUNCTION check_convergence()
-      USE KEY, ONLY : BITSSLBFGS_CONVERGENCE
-      stop_criterion = (rms .lt. BITSSLBFGS_CONVERGENCE)
+      USE KEY, ONLY : BITSSLBFGS_conv
+      stop_criterion = (rms .lt. BITSSLBFGS_conv)
     END FUNCTION check_convergence
 
 
