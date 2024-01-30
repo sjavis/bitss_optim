@@ -2,7 +2,7 @@ MODULE bitss_lbfgs
 
   USE COMMONS, ONLY : nopt
   USE KEY, ONLY : bitsslbfgs_m
-  USE BITSSMODULE, ONLY : bitss_e, bitss_eg
+  USE BITSS_POTENTIAL, ONLY : bitss_e, bitss_eg
 
   IMPLICIT NONE
 
