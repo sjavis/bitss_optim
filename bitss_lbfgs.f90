@@ -1,47 +1,37 @@
 MODULE bitss_lbfgs
-  ! Contains the logic used to drive the L-BFGS algorithm.
-  ! This should not need to be modified.
-  !
-  ! The 'heavy lifting' is done the subroutines in lbfgs_maths,
-  ! it is those steps that are open to parallelisation, or the calculation
-  ! of the gradient, which is handled in the potential file.
-  !
-  ! These steps have been modified from the pele code to run in pure fortran,
-  ! lbfgs_maths has been used directly.
-  USE potential
   IMPLICIT NONE
 
-  ! Result Values
-  INTEGER :: n_steps, point, CONV_COUNT, n_grad
-
-  ! Internal Values
+  INTEGER, PRIVATE :: point
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: s(:,:), y(:,:), p(:), stp(:)
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:), g(:)
-  DOUBLE PRECISION, PRIVATE :: e, e0, e_initial
+  DOUBLE PRECISION, PRIVATE :: e, e0, e_initial, rms
+
+  USE KEY, ONLY : BITSSLBFGS_M
+  ASSOCIATE(n=>2*NOPT, m=>BITSSLBFGS_M)
 
 
   CONTAINS
 
 
     SUBROUTINE allocate_quench()
-      IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(2*NOPT))
-      IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(2*NOPT))
-      IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(2*NOPT))
-      IF (ALLOCATED(g))     DEALLOCATE(g);     ALLOCATE(g(2*NOPT))
-      IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(2*NOPT,m))
-      IF (ALLOCATED(y))     DEALLOCATE(y);     ALLOCATE(y(2*NOPT,m))
+      IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(n))
+      IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(n))
+      IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(n))
+      IF (ALLOCATED(g))     DEALLOCATE(g);     ALLOCATE(g(n))
+      IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(n, m))
+      IF (ALLOCATED(y))     DEALLOCATE(y);     ALLOCATE(y(n, m))
       IF (ALLOCATED(p))     DEALLOCATE(p);     ALLOCATE(p(m)) ! rho
     END SUBROUTINE allocate_quench
 
 
     SUBROUTINE minimise(coords)
-      DOUBLE PRECISION, INTENT(INOUT) :: COORDS(2*NOPT)
+      DOUBLE PRECISION, INTENT(INOUT) :: COORDS(n)
       USE KEY, ONLY : BITSSLBFGS_MAXITER
-      DOUBLE PRECISION :: e, g(2*NOPT)
+      DOUBLE PRECISION :: e, g(n)
       CALL allocate_quench()
 
       x = coords
-      CALL BITSS_EG(x, e, g)
+      CALL bitss_eg(x, e, g)
       rms = NORM2(g)/SQRT(DBLE(n))
       e_initial = e
 
@@ -55,6 +45,7 @@ MODULE bitss_lbfgs
         point = MOD(lbfgs_iter-1, m) + 1
         CALL get_step() ! Get the search direction
         CALL adjust_step_size() ! Perform a simple linesearch
+        CALL bitss_eg(x, e, g)
 
         ! Update the working arrays
         s(:,point) = x - x0
@@ -67,27 +58,14 @@ MODULE bitss_lbfgs
     END SUBROUTINE minimise
 
 
-    SUBROUTINE log_fn()
-      ! Print log message
-      character(len=1024) :: filename
-      if (debug .and. (mod(lbfgs_iter,lbfgs_log_iter)==0)) then
-        write(filename,'(A,A)') trim(output_dir), '/min.log'
-        open(1, file=filename, access='append')
-        write(1,'(A,ES15.8,A,ES15.8,A,I7,A,ES10.4)') &
-          'Energy   ',e,'   RMS   ', rms, '   after step', lbfgs_iter , '  of size  ', norm2(x-x0)
-        close(1)
-      end if
-    END SUBROUTINE log_fn
-
-
     SUBROUTINE get_step()
       INTEGER :: j1, j2, bound
       DOUBLE PRECISION :: H0, q(n), a(m), b
-      
+
       IF (lbfgs_iter == 1) THEN
         H0 = 1 / NORM2(g)
         stp = - H0 * g
-      
+
       ELSE
         bound = MIN(lbfgs_iter-1, m)
 
@@ -125,10 +103,10 @@ MODULE bitss_lbfgs
       ! decrease step size until it is accepted
       DO n_decrease = 1, 10
         x = x0 + stp
-        CALL BITSS_EG(x, e)
+        CALL bitss_e(x, e)
 
         ! If the energy rise is too great then reduce step size.
-        IF (accept_step(e, e0)) RETURN
+        IF (accept_step(e, e0)) EXIT
         stp = stp / 10d0
       END DO
     END SUBROUTINE adjust_step_size
