@@ -1,4 +1,4 @@
-MODULE bfgs_logic
+MODULE bitss_lbfgs
   ! Contains the logic used to drive the L-BFGS algorithm.
   ! This should not need to be modified.
   !
@@ -16,59 +16,54 @@ MODULE bfgs_logic
 
   ! Internal Values
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: s(:,:), y(:,:), p(:), stp(:)
-  DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:)
-  DOUBLE PRECISION, PRIVATE :: e0, e_initial
+  DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:), g(:)
+  DOUBLE PRECISION, PRIVATE :: e, e0, e_initial
 
 
   CONTAINS
 
 
     SUBROUTINE allocate_quench()
-      IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(N))
-      IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(N))
-      IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(N))
-      IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(n,m))
-      IF (ALLOCATED(y))     DEALLOCATE(y);     ALLOCATE(y(n,m))
-      IF (ALLOCATED(p))     DEALLOCATE(p);     ALLOCATE(p(m))
+      IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(2*NOPT))
+      IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(2*NOPT))
+      IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(2*NOPT))
+      IF (ALLOCATED(g))     DEALLOCATE(g);     ALLOCATE(g(2*NOPT))
+      IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(2*NOPT,m))
+      IF (ALLOCATED(y))     DEALLOCATE(y);     ALLOCATE(y(2*NOPT,m))
+      IF (ALLOCATED(p))     DEALLOCATE(p);     ALLOCATE(p(m)) ! rho
     END SUBROUTINE allocate_quench
 
 
     SUBROUTINE minimise(coords)
       DOUBLE PRECISION, INTENT(INOUT) :: COORDS(2*NOPT)
-      ! Run the minimiser.
-      ! Keep iterating until we reach preset limit or reach
-      ! convergence.
-
+      USE KEY, ONLY : BITSSLBFGS_MAXITER
+      DOUBLE PRECISION :: e, g(2*NOPT)
       CALL allocate_quench()
-      lbfgs_iter = 1
 
-      CALL bitss_eg(coords, e, g)
+      x = coords
+      CALL BITSS_EG(x, e, g)
       rms = NORM2(g)/SQRT(DBLE(n))
-
       e_initial = e
 
-      DO WHILE ((lbfgs_iter <= max_iterations) .and. (.not. is_stop_criteron()))
-        IF (ramp_stat) CALL ramp(lbfgs_iter)
-
+      lbfgs_iter = 1
+      DO WHILE ((lbfgs_iter <= BITSSLBFGS_MAXITER) .and. (.not. check_convergence()))
         ! Assign copies
         e0 = e
         x0 = x
         g0 = g
 
-        ! Get the search direction
-        point = mod(lbfgs_iter-1, m) + 1
-        call get_step()
-        ! Make sure the step is sensible and take it
-        call adjust_step_size()
+        point = MOD(lbfgs_iter-1, m) + 1
+        CALL get_step() ! Get the search direction
+        CALL adjust_step_size() ! Perform a simple linesearch
 
         ! Update the working arrays
         s(:,point) = x - x0
         y(:,point) = g - g0
-        p(point) = 1 / dot_product(y(:,point), s(:,point))
+        p(point) = 1 / DOT_PRODUCT(y(:,point), s(:,point))
 
-        rms = norm2(g)/sqrt(dble(n))
+        rms = NORM2(g)/SQRT(DBLE(n))
         lbfgs_iter = lbfgs_iter + 1
-      end do
+      END DO
     END SUBROUTINE minimise
 
 
@@ -86,112 +81,79 @@ MODULE bfgs_logic
 
 
     SUBROUTINE get_step()
-      implicit none
-      integer :: j1, j2, bound
-      double precision :: H0, q(n), a(m), b
+      INTEGER :: j1, j2, bound
+      DOUBLE PRECISION :: H0, q(n), a(m), b
       
-      if (lbfgs_iter == 1) then
-        stp = - H0init * g
+      IF (lbfgs_iter == 1) THEN
+        H0 = 1 / NORM2(g)
+        stp = - H0 * g
       
-      else
-        bound = min(lbfgs_iter-1, m)
+      ELSE
+        bound = MIN(lbfgs_iter-1, m)
 
-        j2 = merge(point-1, m, point>1)
-        H0 = 1 / (p(j2) * sum(y(:,j2)**2))
+        j2 = MERGE(point-1, m, point>1)
+        H0 = 1 / (p(j2) * SUM(y(:,j2)**2))
 
         q = g
-        do j1 = point-1, point-bound, -1
-          j2 = mod(j1-1+m, m) + 1
-          a(j2) = p(j2) * dot_product(s(:,j2), q)
+        DO j1 = point-1, point-bound, -1
+          j2 = MOD(j1-1+m, m) + 1
+          a(j2) = p(j2) * DOT_PRODUCT(s(:,j2), q)
           q = q - a(j2) * y(:,j2)
-        end do
+        END DO
         stp = H0 * q
 
-        do j1 = point-bound, point-1
-          j2 = mod(j1-1+m, m) + 1
-          b = p(j2) * dot_product(y(:,j2), stp)
+        DO j1 = point-bound, point-1
+          j2 = MOD(j1-1+m, m) + 1
+          b = p(j2) * DOT_PRODUCT(y(:,j2), stp)
           stp = stp + s(:,j2) * (a(j2) - b)
-        end do
+        END DO
         stp = - stp
 
-        if (dot_product(stp, g) > 0) stp = -stp;
-      end if
+        IF (DOT_PRODUCT(stp, g) > 0) stp = -stp;
+      END IF
     END SUBROUTINE get_step
 
 
     SUBROUTINE adjust_step_size()
-      ! Make sure that the step is sensible, and take it.
-      !
-      ! This is known as a backtracking line search
-      integer :: n_decrease
-      double precision :: step_size
+      ! A simple backtracking line search
+      INTEGER :: n_decrease
+      DOUBLE PRECISION :: step_size
 
-      step_size = norm2(stp)
-      if (step_size .gt. max_step_size) stp = stp * max_step_size / step_size
+      step_size = NORM2(stp)
+      IF (step_size .gt. max_step_size) stp = stp * max_step_size / step_size
 
       ! decrease step size until it is accepted
-      do n_decrease = 1, 10
+      DO n_decrease = 1, 10
         x = x0 + stp
-        call compute_ev_midlayer()
+        CALL BITSS_EG(x, e)
 
         ! If the energy rise is too great then reduce step size.
-        if (is_accept_step(e, e0)) then
-          return
-        else
-          stp = stp/3d0
-        end if
-      end do
-
-      !! If the energy is increasing use gradient descent
-      !stp = - H0init * g
-      !do n_decrease = 1, 3
-      !  x = x0 + stp
-      !  call compute_ev_midlayer()
-
-      !  ! If the energy rise is too great then reduce step size.
-      !  if (is_accept_step(e, e0)) then
-      !    return
-      !  else
-      !    stp = stp/5d0
-      !  end if
-      !end do
+        IF (accept_step(e, e0)) RETURN
+        stp = stp / 10d0
+      END DO
     END SUBROUTINE adjust_step_size
 
 
-    logical FUNCTION is_stop_criteron()
-      double precision :: e0
-      logical :: not_initial
-      ! Test to see if convergence has been reached.
-      ! At the moment this is done by means of a simple RMS check
-      !
-      ! N.B. stop_signal == .true. implies convergence.
-
-      ! Check that the state has changed from the initialisation
-      not_initial = ((e .lt. e_initial-1d-3*abs(e_initial)) .or. allow_initial .or. lbfgs_iter>max_iterations/10)
-      if ((rms .lt. convergence_rms) .and. not_initial .and. lbfgs_iter>1) then
-        is_stop_criteron = .true.
-      else
-        is_stop_criteron = .false.
-      end if
-    END FUNCTION is_stop_criteron
+    LOGICAL FUNCTION check_convergence()
+      USE KEY, ONLY : BITSSLBFGS_CONVERGENCE
+      stop_criterion = (rms .lt. BITSSLBFGS_CONVERGENCE)
+    END FUNCTION check_convergence
 
 
-    logical FUNCTION is_accept_step(E_new, E_old)
-      ! Do we accept the new step. By default this is dE < dE_max?
-      ! We may change this later on.
-      double precision, intent(inout) :: E_old, E_new
-      double precision :: dE
+    LOGICAL FUNCTION accept_step(E_new, E_old)
+      ! Do we accept the new step? This is dE < dE_max
+      DOUBLE PRECISION, INTENT(IN) :: E_old, E_new
+      DOUBLE PRECISION :: dE
+      USE KEY, ONLY : BITSSLBFGS_DEMAX
 
       ! Relative or absolute energy check
-      if (relative_energy_check .eqv. .true.) then
-        if (E_old .eq. 0d0) then
-          E_old = 1d-40
-        end if
-        dE = (E_new - E_old)/abs(E_old)
-      else
+      IF (relative_energy_check) THEN
+        IF (E_old <= 0d0) print *, "Warning: Attempting relative energy check with non-positive energy"
+        dE = (E_new - E_old) / E_old
+      ELSE
         dE = E_new - E_old
-      end if
-      is_accept_step = (dE .lt. dE_max)
+      END IF
+      accept_step = (dE .lt. BITSSLBFGS_DEMAX)
     END FUNCTION
 
 
