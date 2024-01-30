@@ -1,14 +1,15 @@
 MODULE bitss_lbfgs
+
+  USE COMMONS, ONLY : nopt
+  USE KEY, ONLY : bitsslbfgs_m
+  USE BITSSMODULE, ONLY : bitss_e, bitss_eg
+
   IMPLICIT NONE
 
   INTEGER, PRIVATE :: point
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: s(:,:), y(:,:), p(:), stp(:)
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:), g(:)
   DOUBLE PRECISION, PRIVATE :: e, e0, e_initial, rms
-
-  USE COMMONS, ONLY : nopt
-  USE KEY, ONLY : bitsslbfgs_m
-  USE BITSSMODULE, ONLY : bitss_e, bitss_eg
   ASSOCIATE(n=>2*nopt, m=>bitsslbfgs_m)
 
 
@@ -27,9 +28,9 @@ MODULE bitss_lbfgs
 
 
     FUNCTION minimise(coords)
+      USE KEY, ONLY : BITSSLBFGS_MAXITER
       DOUBLE PRECISION, INTENT(INOUT) :: COORDS(n)
       LOGICAL, INTENT(OUT) :: minimise
-      USE KEY, ONLY : BITSSLBFGS_MAXITER
       DOUBLE PRECISION :: e, g(n)
       CALL allocate_quench()
 
@@ -124,9 +125,9 @@ MODULE bitss_lbfgs
 
     LOGICAL FUNCTION accept_step(E_new, E_old)
       ! Do we accept the new step? This is dE < dE_max
+      USE KEY, ONLY : BITSSLBFGS_DEMAX
       DOUBLE PRECISION, INTENT(IN) :: E_old, E_new
       DOUBLE PRECISION :: dE
-      USE KEY, ONLY : BITSSLBFGS_DEMAX
 
       ! Relative or absolute energy check
       IF (relative_energy_check) THEN
