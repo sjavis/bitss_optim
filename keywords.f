@@ -1,24 +1,24 @@
 ! OPTIM: A prograa for optimizing geometries and calculating reaction pathways
 ! Copyright (C) 1999-2006 David J. Wales
 ! This file is part of OPTIM.
-! 
+!
 ! OPTIM is free software; you can redistribute it and/or modify
 ! it under the terms of the GNU General Public License as published by
 ! the Free Software Foundation; either version 2 of the License, or
 ! at your option) any later version.
-! 
+!
 ! OPTIM is distributed in the hope that it will be useful,
 ! but WITHOUT ANY WARRANTY; without even the implied warranty of
 ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ! GNU General Public License for more details.
-! 
+!
 ! You should have received a copy of the GNU General Public License
 ! along with this program; if not, write to the Free Software
 ! Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-! 
+!
 ! All the keywords possible for the odata file are contained here in
 ! alphabetical order. Initialisation statements procede the big IF block.
-! 
+!
       SUBROUTINE KEYWORDS(Q)
          USE COMMONS
          USE KEY
@@ -93,7 +93,7 @@
          DOUBLE PRECISION ::  Q(NOPT)
 
          INTEGER NDUM, LUNIT, FUNIT, GETUNIT, MLPDATSTART, MLQDATSTART
-        
+
          INTEGER ITEM, NITEMS, LOC, LINE, NCR, NERROR, IR, LAST, NTYPEA, J1, J2, J3, J, I, J4
          COMMON /BUFINF/ ITEM, NITEMS, LOC(132), LINE, SKIPBL, CLEAR, NCR,
      &   NERROR, IR, ECHO, LAST, CAT
@@ -190,7 +190,7 @@
          LOGICAL :: USEIMPROPDIHT
 
          INTEGER :: NADDEDP
- 
+
          LPI=3.14159265358979323846264338327950288419716939937510D0
 
 ! IF_NOT_BIOVIA
@@ -308,9 +308,9 @@
          CASTEPJOB=''
          QCHEM=.FALSE.
          QCHEMES=.FALSE.
-         QCHEMSCF=.FALSE.  
+         QCHEMSCF=.FALSE.
          QCHEMGHF=.FALSE.
-         QCHEMSCFDUMP=.FALSE.  
+         QCHEMSCFDUMP=.FALSE.
          QCHEMESNAO=0
          QCHEMESNMO=0
          QCHEMESNZERO=0
@@ -861,9 +861,9 @@
          MULTI_COUNT = 1
          MULTI_LAST = HUGE(100000)  ! By default, we will carry on adding configurations until the end of the file, or we reach this ridiculously large number
          MULTI_STEP = 1
-         
+
          USEIMPROPDIHT = .FALSE.
-         
+
          DJWRBT=.FALSE.
          NHEXAMERS=0
          !
@@ -1212,7 +1212,7 @@
 
          MBPOLT= .FALSE.
 
-! k-means 
+! k-means
 
          KMEANST=.FALSE.
 ! OPEP stuff
@@ -1256,6 +1256,10 @@
          BITSST = .FALSE.
          BITSSALPHA = 10
          BITSSBETA = 0.1
+         BITSS_m = 5
+         BITSS_maxiter = 100
+         BITSS_dEmax = 1D-10
+         BITSS_conv = 1D-6
 
 !!!!! END OF VARIABLE INITIALISATION, START READING THE DATA FILE HERE !!!!!
 
@@ -1848,7 +1852,7 @@
             IF (NITEMS.GT.1) THEN
                CALL READI(DUMPSINTERVAL)
                WRITE(*,'(A,I10)') ' keywords> Structures will be dumped in xyz format from LBFGS routine at intervals of ',
-     &                              DUMPSINTERVAL   
+     &                              DUMPSINTERVAL
             ENDIF
 !
 ! Distinguish between old C of M/Euler and new angle/axis coordinates for
@@ -2105,6 +2109,11 @@
          ELSE IF (WORD.EQ.'BITSSCOEF') THEN
             CALL READF(BITSSALPHA)
             CALL READF(BITSSBETA)
+         ELSE IF (WORD.EQ.'BITSSLBFGS') THEN
+            CALL READI(BITSS_m)
+            CALL READI(BITSS_maxiter)
+            CALL READF(BITSS_dEmax)
+            CALL READF(BITSS_conv)
 !
 ! General BLN model.
 !
@@ -2196,7 +2205,7 @@
      &      HABLN, HBBLN, HCBLN, HDBLN, EABLN, EBBLN, ECBLN, EDBLN, TABLN, TBBLN, TCBLN, TDBLN, NATOMS)
 ! END_IF_NOT_BIOVIA
 !
-! Qi Yu/Joel Bowman potential for H+ (H2O)n 
+! Qi Yu/Joel Bowman potential for H+ (H2O)n
 ! Atoms must be ordered
 ! H   H H O H H O H H O etc.
 !
@@ -2925,7 +2934,7 @@
             CALL READF(CONVU)
             IF (NITEMS.GT.2) THEN
                CALL READF(CONVR)
-               GMAX=CONVR ! these need to be consistent 
+               GMAX=CONVR ! these need to be consistent
             ENDIF
             IF (NITEMS.GT.3) THEN
                CALL READU(WORD)
@@ -3086,16 +3095,16 @@
             LUNIT=GETUNIT()
             OPEN(LUNIT,FILE=TRIM(ADJUSTL(FILENAME)),STATUS='OLD')
             NDISTCON=0
-            DO 
+            DO
               READ(LUNIT,*,END=564) NDUMMY
               NDISTCON=NDISTCON+1
             ENDDO
 564         CONTINUE
-            PRINT '(A,I8,A)',' keywords> Reading ',NDISTCON,' atom pair constraints, distances, force constants from file ' 
-     &            // TRIM(ADJUSTL(FILENAME))  
+            PRINT '(A,I8,A)',' keywords> Reading ',NDISTCON,' atom pair constraints, distances, force constants from file '
+     &            // TRIM(ADJUSTL(FILENAME))
             REWIND(LUNIT)
             ALLOCATE(CONDISTATOM1(NDISTCON),CONDISTATOM2(NDISTCON),CONDIST(NDISTCON),KDIST(NDISTCON))
-            DO J1=1,NDISTCON 
+            DO J1=1,NDISTCON
               READ(LUNIT,*) CONDISTATOM1(J1),CONDISTATOM2(J1),CONDIST(J1),KDIST(J1)
               WRITE(*,'(2I8,2G20.10)') CONDISTATOM1(J1),CONDISTATOM2(J1),CONDIST(J1),KDIST(J1)
             ENDDO
@@ -3223,7 +3232,7 @@
                   IF (NITEMS.GT.2) THEN
                      CALL READU(WW)
                      READ(WW,'(I20)') COSTFUNCTIONPOWER
-                  ENDIF 
+                  ENDIF
                   PRINT '(A,I6)',' keywords> using index metric raised to power ',COSTFUNCTIONPOWER
                ELSEIF (TRIM(ADJUSTL(WW))=='DIHEDRAL') THEN
                   DIHEDRALCOSTFUNCTION=.TRUE.
@@ -3479,7 +3488,7 @@
             ENDIF
          ELSE IF (WORD.EQ.'DUMPEVALS') THEN
             DUMPEVALST=.TRUE.
-! 
+!
 ! EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 !
 !
@@ -4196,7 +4205,7 @@ Cjbr36      > FREEZERANGE of atoms
                CALL READF(GThomsonCharge2)
                CALL READF(GThomsonSigma2)
                CALL READI(GThomsonBinaryN)
-	    ELSE                      
+	    ELSE
 		IF (NITEMS.GT.2) THEN
 		CALL READF(GThomsonSigma)
 		ENDIF
@@ -4767,7 +4776,7 @@ Cjbr36      > FREEZERANGE of atoms
 !The necessary file is rbdata (as for SANDBOX), combined with the coords file, so that the pairwise
 !interactions are properly set. If you want an addressable system, you should use it in conjunction
 !       with the LJADD3 and SANDBOX keywords, with LJADD3 and SANDBOX being defined BEFORE the LJCOULADD3 keyword.
-         ELSE IF (WORD.EQ.'LJCOULADD3') THEN           
+         ELSE IF (WORD.EQ.'LJCOULADD3') THEN
            LJADDT=.TRUE.
            LJADD3T=.TRUE.
            LJCOULADD3T=.TRUE.
@@ -4778,7 +4787,7 @@ Cjbr36      > FREEZERANGE of atoms
 ! sf344> harmonic restraint potential (syntaxis order: force constant, radius)
              CALL READF(LJCOULADD3RESTRAINTK)
              CALL READF(LJCOULADD3RESTRAINTR)
-             WRITE(MYUNIT,'(A,2F8.3)') 'keyword> Spherical harmonic restraint potential will be added, K and R= ', 
+             WRITE(MYUNIT,'(A,2F8.3)') 'keyword> Spherical harmonic restraint potential will be added, K and R= ',
      &          LJCOULADD3RESTRAINTK, LJCOULADD3RESTRAINTR
            END IF
            IF (MOD(NATOMS,NADDTARGET).NE.0) THEN
@@ -4797,7 +4806,7 @@ Cjbr36      > FREEZERANGE of atoms
 !         ENDDO
 !         CLOSE(LUNIT)
         ! sf344> add Coulombic repulsion between addressable particles of index 1
-!        IF (NITEMS.GT.2) THEN 
+!        IF (NITEMS.GT.2) THEN
 !            CALL READF(LJADD3CHARGE)
 !        END IF
          ELSE IF (WORD.EQ.'LJADD4') THEN
@@ -5114,7 +5123,7 @@ Cjbr36      > FREEZERANGE of atoms
 !    MLP3 is a 3-layer perceptron
 !    MLPB3 is a 3-layer perceptron with bias weights
 !    MLPB3NEW is like MLPB3, but allows you to specify a starting position in the MLPdata file
-!!! NB have removed MLPB3 and MLPB3NEW, as they didn't seem to work anyway! (coords file gave eof error) 
+!!! NB have removed MLPB3 and MLPB3NEW, as they didn't seem to work anyway! (coords file gave eof error)
 !    MLPVB3 is the newest 3-layer perceptron -- this is the recommended one to use
 !    MLPVB3NN is the nearest-neighbours MLPVB3 model
 !    MLMIN is used to collect and evaluate MLPVB3 minima
@@ -5132,14 +5141,14 @@ Cjbr36      > FREEZERANGE of atoms
 !         IF (WORD.EQ.'MLPB3')         MLPB3T=.TRUE.
 !         IF (WORD.EQ.'MLPB3NEW')      MLPB3NEWT=.TRUE. ! will make MLPB3T true a little later
          IF ((WORD.EQ.'MLPVB3')
-     &          .OR.(WORD.EQ.'MLMIN')       
-     &          .OR.(WORD.EQ.'MLSUP')      
+     &          .OR.(WORD.EQ.'MLMIN')
+     &          .OR.(WORD.EQ.'MLSUP')
      &          .OR.(WORD.EQ.'MLPVB3NN'))  MLPVB3T=.TRUE.
          IF (WORD.EQ.'DL')            DLT=.TRUE.
          IF (WORD.EQ.'MLQ')           MLQT=.TRUE.
-         IF ((WORD.EQ.'MLMIN')        
+         IF ((WORD.EQ.'MLMIN')
      &          .OR.(WORD.EQ.'AUCMLMIN'))  MLMINT=.TRUE.
-         IF ((WORD.EQ.'AUCMLPVB3')    
+         IF ((WORD.EQ.'AUCMLPVB3')
      &          .OR.(WORD.EQ.'AUCMLMIN'))  AUCMLPVB3T=.TRUE.
          IF (WORD.EQ.'MLPVB3SAM')     SAMT=.TRUE.
          IF (WORD.EQ.'MLSUP')         MLSUPT=.TRUE.
@@ -5152,7 +5161,7 @@ Cjbr36      > FREEZERANGE of atoms
             ELSE
                MLMINT=.FALSE.  ! so we don't try to save all the probabilities again
             ENDIF
-            
+
             ! For MLSUP, check we have the right NN parameters, matching MLMIN,
             ! which should already have been called
             CALL READI(NDUMMY)
@@ -5160,13 +5169,13 @@ Cjbr36      > FREEZERANGE of atoms
                 PRINT '(A)','keywords> ERROR number of inputs is different from MLMIN line'
                 STOP
             ENDIF
-            
+
             CALL READI(NDUMMY)
             IF (NDUMMY.NE.MLPSTART) THEN
                 PRINT '(A)','keywords> ERROR starting position is different from MLMIN line'
                 STOP
             ENDIF
-            
+
             CALL READI(MLPHIDDEN)  ! number of hidden nodes does not have to be the same as for original networks,
                                    ! nor does lambda (assigned after the MLSUP IF block)
 
@@ -5177,7 +5186,7 @@ Cjbr36      > FREEZERANGE of atoms
             ENDIF
             MLPOUT=MLPMINIMA    ! note the number of minima from MLMIN is the number of outputs for MLSUP
             WRITE(*,'(A,I8,A)') 'keywords> Using results for ',MLPOUT,' saved minima in MLMINweights file'
-            
+
             CALL READI(NDUMMY)
             IF (NDUMMY.NE.MLPDATA) THEN
                 PRINT '(A)','keywords> ERROR number of data items is different from MLMIN line'
@@ -5197,7 +5206,7 @@ Cjbr36      > FREEZERANGE of atoms
             CALL READI(MLPOUT)
             CALL READI(MLPDATA)
          ENDIF
-            
+
          CALL READF(MLPLAMBDA)
 
          IF (AUCMLPVB3T) THEN
@@ -5212,19 +5221,19 @@ Cjbr36      > FREEZERANGE of atoms
 !         IF (MLPB3T.AND.(NITEMS.GT.6)) CALL READI(MLPDATSTART)
 
          IF (SAMT)                     CALL READF(RHOSAM)
-         
+
          IF (MLPVB3NNT)                CALL READI(MLPNEIGH)
 
          IF (MLMINT)                   CALL READI(MLPMINIMA)
 
 !         ! Now make MLPB3T true for MLPB3NEW
 !         IF (MLPB3NEWT) MLPB3T=.TRUE.
-            
+
          IF (MLP3T) THEN
             WRITE(*,'(A,4I8,G20.10)') 'keywords> MLP3 potential with Nin, Nhidden, Nout, Ndata, lambda=',
      &                                          MLPIN,MLPHIDDEN,MLPOUT,MLPDATA,MLPLAMBDA
             NMLP=MLPHIDDEN*(MLPIN+MLPOUT)
-            
+
 !         ELSE IF (MLPB3T) THEN
 !            IF (MLPB3NEWT) THEN
 !               WRITE(*,'(A,5I8,G20.10)') 'keywords> MLP3 new potential bias nodes and Nin, Ninstart, Nhidden, Nout, Ndata, lambda=',&
@@ -5234,19 +5243,19 @@ Cjbr36      > FREEZERANGE of atoms
 !&                                             MLPIN,MLPHIDDEN,MLPOUT,MLPDATA,MLPDATSTART,MLPLAMBDA
 !            ENDIF
 !            NMLP=MLPHIDDEN*(MLPIN+MLPOUT)+1
-            
+
          ELSE IF (MLPVB3T.OR.DLT) THEN
             WRITE(*,'(A,5I8,G20.10)') 'keywords> MLP3 vector bias nodes and Nin, Ninstart, Nhidden, Nout, Ndata, lambda=',
      &                                           MLPIN,MLPSTART,MLPHIDDEN,MLPOUT,MLPDATA,MLPLAMBDA
             IF (MLPVB3NNT) WRITE(MYUNIT,'(A,I8)') 'keywords> Nearest-neighbours=',
      &                                                       MLPNEIGH
             NMLP=MLPHIDDEN*(MLPIN+MLPOUT)+MLPHIDDEN+MLPOUT
-            
+
          ELSE IF (AUCMLPVB3T) THEN
             WRITE(*,'(2A,5I8,2G20.10)') 'keywords> AUCMLPVB3 vector bias nodes and Nin, Ninstart, Nhidden, Nout, Ndata,',
      &                                       'lambda, beta=', MLPIN,MLPSTART,MLPHIDDEN,MLPOUT,MLPDATA,MLPLAMBDA,AUCMLPBETA
             NMLP=MLPHIDDEN*(MLPIN+MLPOUT)+MLPHIDDEN+MLPOUT
-            
+
             SELECT CASE (AUCSURROGATE)
             CASE (AUCSIGMOID)
                WRITE(*,'(A)') 'keywords> Using sigmoid for AUC surrogate'
@@ -5262,19 +5271,19 @@ Cjbr36      > FREEZERANGE of atoms
             CASE (AUCCUBIC)
                WRITE(*,'(A)') 'keywords> Using cubic function for AUC surrogate'
             END SELECT
-            
+
          ELSE IF (SAMT) THEN
             WRITE(*,'(2A,5I8,2G20.10)') 'keywords> MLP3 vector bias nodes with SAM and Nin, Ninstart, Nhidden, Nout, Ndata,',
      &                                     'lambda, rho=', MLPIN,MLPSTART,MLPHIDDEN,MLPOUT,MLPDATA,MLPLAMBDA,RHOSAM
             NMLP=MLPHIDDEN*(MLPIN+MLPOUT)+MLPHIDDEN+MLPOUT
-            
+
          ELSE IF (MLQT) THEN
             WRITE(*,'(A,4I8,G20.10)') 'keywords> MLQ Nin, Ninstart, Nout, Ndata, lambda=',
      &                                           MLPIN,MLPSTART,MLPOUT,MLPDATA,MLPLAMBDA
             NMLP=MLPOUT*(1+(MLPIN*(MLPIN+3))/2)
             ! NB will change variables to having "MLQ" in their names later
          ENDIF
-         
+
          IF (MLMINT) THEN
             WRITE(*,'(A,5I8,G20.10,I8)') 'keywords> MLMIN selected with Nmin=',MLPMINIMA
          ENDIF
@@ -5286,7 +5295,7 @@ Cjbr36      > FREEZERANGE of atoms
          ENDIF
 
          ! Call function to fetch the data from MLPdata or MLQdata
-         ! File should have the format 
+         ! File should have the format
          !    <outcome> <feature1> <feature2> ...
          ! and have one line per data point
          CALL GETMLDATA(MLNORM,MLQT)
@@ -5337,7 +5346,7 @@ Cjbr36      > FREEZERANGE of atoms
             ! Finally, call function to find which minima classify each data point correctly and incorrectly
             ! and find a misclassification index (see function for further details)
             CALL GETMINIMACHARACTERISTICS
-            
+
             DEALLOCATE(MLPDAT,MLPOUTCOME,MLMINWEIGHTS)
          END IF
 
@@ -5376,7 +5385,7 @@ Cjbr36      > FREEZERANGE of atoms
          IF (WORD.EQ.'AUCQUAD')    AUCSURROGATE=AUCQUAD
          IF (WORD.EQ.'AUCCUBIC')   AUCSURROGATE=AUCCUBIC
          AUCSURROGATESELECTEDT=.TRUE.
-         
+
       ! Print all the output probabilities for each data line.
       ELSE IF (WORD.EQ.'MLPRINT') THEN
          MLPPRINT=.TRUE.
@@ -5390,7 +5399,7 @@ Cjbr36      > FREEZERANGE of atoms
          IF (NITEMS.GT.1) CALL READI(MLPPROBPOS)
          WRITE(*,'(A,I6)')
      & 'keywords> Will calculate ROC and AUC values in final quenches assuming positive outcome (counting from 1) is indexed ',
-     &                 MLPPROBPOS  
+     &                 MLPPROBPOS
 !
 ! MLPNORM rescales the input data columns by dividing each one by the
 ! average of the mean magnitude
@@ -5618,7 +5627,7 @@ Cjbr36      > FREEZERANGE of atoms
             WRITE(*,*) "keywords> Reading ", N_POINTS ," points from file ", KMEANS_FILE
             WRITE(*,*) "keywords> Interpolation scaling ",KMEANS_B,", and ",KMEANS_NP,"perturbations"
 
-! 
+!
 ! Specifies a tight-binding potential for sodium, silver and lithium
 !
          ELSE IF (WORD.EQ.'NATB') THEN
@@ -5697,7 +5706,7 @@ Cjbr36      > FREEZERANGE of atoms
             NIMAGE=NIMAGE+1
             GOTO 753
 864         NIMAGE=NIMAGE-2
-            PRINT '(A,I6,A)',' keywords> Including endpoints there are ',NIMAGE+2,' images in file ' // TRIM(ADJUSTL(GUESSFILE))  
+            PRINT '(A,I6,A)',' keywords> Including endpoints there are ',NIMAGE+2,' images in file ' // TRIM(ADJUSTL(GUESSFILE))
             NIMAGEREAD=NIMAGE ! NIMAGE is overwritten before the actual images are read in RWG called from newneb
             CLOSE(LUNIT)
 !
@@ -6241,11 +6250,11 @@ C
               WRITE(MYUNIT,'(A)') 'keyword> Simulation of a mixed system (protein+DNA)'
             ELSE
               WRITE(*,'(A)') 'keyword> Invalid system choice'
-              STOP           
+              STOP
             ENDIF
 
             CALL READA(OPEP_DUMMY2)
-            
+
             IF (.NOT.ALLOCATED(ATMASS)) ALLOCATE(ATMASS(NATOMS))
             CALL OPEP_INIT(NATOMS,Q(1:3*NATOMS),ATMASS(1:NATOMS),OPEP_RNAT,OPEP_DNAT,OPEP_PROT)
 
@@ -6304,7 +6313,7 @@ C
          CALL READF(PFV0)
          CALL READF(PFCVOL)
          CALL READI(PFINITTYPE)
-         CALL PFWETBIN_INIT() 
+         CALL PFWETBIN_INIT()
 
 
       ! lm759> HB detection in HiRE - in development
@@ -6333,7 +6342,7 @@ C
           SAXST =.TRUE.
           CALL READI(SAXSNSTEPS)
           CALL READF(SAXSMAX)
-          CALL SETUP_SAXS(SAXST,SAXSPRINT,SAXSMODULT,SAXSINVSIG,SAXSMAX, 
+          CALL SETUP_SAXS(SAXST,SAXSPRINT,SAXSMODULT,SAXSINVSIG,SAXSMAX,
      &                    SAXSSOLT,REFINET,WATRAD,NWATLAY)
 
 
@@ -6427,7 +6436,7 @@ C
 
             IF (DFTBP_DUMMY.EQ.'start' .OR. INDEX(DFTBP_DUMMY,'xyz').GT.0) THEN
                IF (FILTH2 .NE. 0) THEN
-                  WRITE(OTEMP, *) FILTH2 
+                  WRITE(OTEMP, *) FILTH2
                   WRITE(OSTRING,'(A)') TRIM(ADJUSTL(DFTBP_DUMMY))//'.'//TRIM(ADJUSTL(OTEMP))
                   WRITE(*,*) 'ostring=', OSTRING
                ELSE
@@ -7183,7 +7192,7 @@ C
                ENDIF
                CALL READI(PMULTA1(NADDEDP))
                CALL READI(PMULTA2(NADDEDP))
-               CALL READF(PMULTFRC(NADDEDP))   
+               CALL READF(PMULTFRC(NADDEDP))
             ELSE
                CALL READI(PATOM1)
                CALL READI(PATOM2)
@@ -7195,7 +7204,7 @@ C
                   WRITE(*,'(A,I6,A,I6,A,G20.10)') ' keyword> Pulling atoms ',PATOM1,' and ',PATOM2,' force=',PFORCE
                ENDIF
             ENDIF
-            
+
 !
 ! Allow for pulling on multiple atoms
 ! Needs to be before PULL is used in keywords
@@ -7555,7 +7564,7 @@ C
                   OPEN(LUNIT,FILE=TRIM(ADJUSTL(OSTRING)), STATUS='OLD')
                   READ(LUNIT,*) QCCOEFFG
                   CLOSE(LUNIT)
-                  WRITE(*,'(A)') ' keywords> initial MO coefficients will be read from '// TRIM(ADJUSTL(OSTRING))// 
+                  WRITE(*,'(A)') ' keywords> initial MO coefficients will be read from '// TRIM(ADJUSTL(OSTRING))//
      &            ' and written to binary file qccoeff'// TRIM(ADJUSTL(OTEMP))
                   CALL WRITE_GHF_COEFF(QCCOEFFG)
                ENDIF
@@ -7591,7 +7600,7 @@ C
                   READ(LUNIT,*) QCCOEFFA
                   READ(LUNIT,*) QCCOEFFB
                   CLOSE(LUNIT)
-                  WRITE(*,'(A)') ' keywords> initial MO coefficients will be read from '// TRIM(ADJUSTL(OSTRING))// 
+                  WRITE(*,'(A)') ' keywords> initial MO coefficients will be read from '// TRIM(ADJUSTL(OSTRING))//
      &            ' and written to binary file qccoeff'// TRIM(ADJUSTL(OTEMP))
                   CALL WRITE_COEFF(QCCOEFFA, QCCOEFFB)
                ENDIF
@@ -7664,12 +7673,12 @@ C
             READ(LUNIT,*) UCCAMP
             CLOSE(LUNIT)
             WRITE(*,'(A)') ' keywords> initial cluster amplitudes will be read from '// TRIM(ADJUSTL(OSTRING))
-         ELSE 
+         ELSE
             UCCAMP(:)=0.D0
          ENDIF
-! 
+!
 ! Initialise variables needed for UCC jobs
-!         
+!
          PRINT '(A)', ' keywords> initialising unitary coupled cluster'
          CALL UCC_INIT()
       ELSE IF (WORD.EQ.'UCCMODE') THEN
@@ -7684,7 +7693,7 @@ C
              STOP
           ENDIF
 ! Shift amplitudes into first periodic repeat unit
-          CALL UCC_FIRST_REPEAT(UCCAMP) 
+          CALL UCC_FIRST_REPEAT(UCCAMP)
 
 !
 ! Read UCC operator order if UCCGBH defined
@@ -7710,9 +7719,9 @@ C
          ENDIF
 !
 ! Turn on extra printing for UCC
-      ELSE IF (WORD.EQ.'UCCPRINT') THEN 
+      ELSE IF (WORD.EQ.'UCCPRINT') THEN
           UCCPRINT=.TRUE.
-           
+
 !
 ! qSPCFw  flexible water model introduced by Paesani et al. (JCP 125, 184507 (2006))
 ! Coded by Javier.
@@ -7961,9 +7970,9 @@ C
             ENDIF
             IF (RBCHECKSTOP) WRITE(*,'(A,G20.10)') ' keyword> Will stop if rigid body transformation is outside threshold ',
      &                            RBCHECKTOL
-            IF (.NOT.RBCHECKSTOP) WRITE(*,'(A,G20.10)') 
+            IF (.NOT.RBCHECKSTOP) WRITE(*,'(A,G20.10)')
      &         ' keyword> Will not stop if rigid body transformation is outside threshold ',
-     &                            RBCHECKTOL   
+     &                            RBCHECKTOL
 
             CALL GENRIGID_READ_FROM_FILE ()
             ! sn402: added next line
@@ -8068,15 +8077,15 @@ C
            FREEZE=.TRUE.
            NFREEZE=NPAD+NBARRIER
            FROZEN(NROACH+1:NROACH+NPAD+NBARRIER)=.TRUE.
-           WRITE(*,'(A,I6,A,I6)') ' keyword> Animal locomotion terrain, freezing sites ',NROACH+1,' to ',NROACH+NPAD+NBARRIER   
+           WRITE(*,'(A,I6,A,I6)') ' keyword> Animal locomotion terrain, freezing sites ',NROACH+1,' to ',NROACH+NPAD+NBARRIER
            CALL READF(REPS1)
            CALL READF(RRHO1)
            CALL READF(RRE1)
            CALL READF(REPS2)
            CALL READF(RRHO2)
-           CALL READF(RRE2)   
-           WRITE(*,'(A,3G20.10)') ' keyword> well depth, range, pair equilibrium distance for animal-pad:      ',REPS1,RRHO1,RRE1   
-           WRITE(*,'(A,3G20.10)') ' keyword> well depth, range, pair equilibrium distance for animal-obstacle: ',REPS2,RRHO2,RRE2 
+           CALL READF(RRE2)
+           WRITE(*,'(A,3G20.10)') ' keyword> well depth, range, pair equilibrium distance for animal-pad:      ',REPS1,RRHO1,RRE1
+           WRITE(*,'(A,3G20.10)') ' keyword> well depth, range, pair equilibrium distance for animal-obstacle: ',REPS2,RRHO2,RRE2
 
 ! END_IF_NOT_BIOVIA
 !
@@ -8602,10 +8611,10 @@ C
 !
          ELSE IF (WORD.EQ.'USEEV') THEN
             CALL READI(NUSEEV)
-            
+
 !
 ! Use improper dihedrals alongside proper dihedrals in the auxiliary dihedral module
-!            
+!
          ELSE IF (WORD.EQ.'USEIMPROPDIH') THEN
             USEIMPROPDIHT = .TRUE.
 !
@@ -8698,7 +8707,7 @@ C
             XTB=.TRUE.
             CALL READA(XTBSYS)
             CALL READA(XTBJOB)
-            PRINT '(A)',' keywords> xtb system: '//TRIM(ADJUSTL(XTBSYS))//' and job string '//TRIM(ADJUSTL(XTBJOB))  
+            PRINT '(A)',' keywords> xtb system: '//TRIM(ADJUSTL(XTBSYS))//' and job string '//TRIM(ADJUSTL(XTBJOB))
 !
 ! YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
 !
@@ -8738,4 +8747,3 @@ C
 20    CONTINUE
       RETURN
       END
-
