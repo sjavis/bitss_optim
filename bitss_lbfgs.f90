@@ -1,14 +1,14 @@
 MODULE bitss_lbfgs
 
   USE COMMONS, ONLY : nopt
-  USE KEY, ONLY : bitsslbfgs_m
+  USE KEY, ONLY : bitsslbfgs_m,  BITSSLBFGS_maxstep
   USE BITSS_POTENTIAL, ONLY : bitss_e, bitss_eg
 
   IMPLICIT NONE
 
-  INTEGER, PRIVATE :: point
+  INTEGER, PRIVATE :: point, lbfgs_iter
   DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: s(:,:), y(:,:), p(:), stp(:)
-  DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:), g(:)
+  DOUBLE PRECISION, PRIVATE, ALLOCATABLE :: x0(:), g0(:), g(:), x(:)
   DOUBLE PRECISION, PRIVATE :: e, e0, e_initial, rms
 
 
@@ -18,6 +18,7 @@ MODULE bitss_lbfgs
     SUBROUTINE allocate_quench()
       IF (ALLOCATED(stp))   DEALLOCATE(stp);   ALLOCATE(stp(2*nopt))
       IF (ALLOCATED(x0))    DEALLOCATE(x0);    ALLOCATE(x0(2*nopt))
+      IF (ALLOCATED(x))     DEALLOCATE(x);     ALLOCATE(x(2*nopt))
       IF (ALLOCATED(g0))    DEALLOCATE(g0);    ALLOCATE(g0(2*nopt))
       IF (ALLOCATED(g))     DEALLOCATE(g);     ALLOCATE(g(2*nopt))
       IF (ALLOCATED(s))     DEALLOCATE(s);     ALLOCATE(s(2*nopt, 2*BITSSLBFGS_m))
@@ -28,8 +29,8 @@ MODULE bitss_lbfgs
 
     FUNCTION minimise(coords)
       USE KEY, ONLY : BITSSLBFGS_MAXITER
-      DOUBLE PRECISION, INTENT(INOUT) :: COORDS(2*nopt)
-      LOGICAL, INTENT(OUT) :: minimise
+      DOUBLE PRECISION :: COORDS(2*nopt)
+      LOGICAL :: minimise
       DOUBLE PRECISION :: e, g(2*nopt)
       CALL allocate_quench()
 
@@ -102,7 +103,7 @@ MODULE bitss_lbfgs
       DOUBLE PRECISION :: step_size
 
       step_size = NORM2(stp)
-      IF (step_size .gt. max_step_size) stp = stp * max_step_size / step_size
+      IF (step_size .gt. BITSSLBFGS_maxstep) stp = stp * BITSSLBFGS_maxstep / step_size
 
       ! decrease step size until it is accepted
       DO n_decrease = 1, 10
@@ -118,7 +119,7 @@ MODULE bitss_lbfgs
 
     LOGICAL FUNCTION check_convergence()
       USE KEY, ONLY : BITSSLBFGS_conv
-      stop_criterion = (rms .lt. BITSSLBFGS_conv)
+      check_convergence = (rms .lt. BITSSLBFGS_conv)
     END FUNCTION check_convergence
 
 
@@ -127,14 +128,15 @@ MODULE bitss_lbfgs
       USE KEY, ONLY : BITSSLBFGS_DEMAX
       DOUBLE PRECISION, INTENT(IN) :: E_old, E_new
       DOUBLE PRECISION :: dE
+      ! LOGICAL :: relative_energy_check
 
       ! Relative or absolute energy check
-      IF (relative_energy_check) THEN
-        IF (E_old <= 0d0) print *, "Warning: Attempting relative energy check with non-positive energy"
-        dE = (E_new - E_old) / E_old
-      ELSE
-        dE = E_new - E_old
-      END IF
+      ! IF (relative_energy_check) THEN
+      !   IF (E_old <= 0d0) print *, "Warning: Attempting relative energy check with non-positive energy"
+      !   dE = (E_new - E_old) / E_old
+      ! ELSE
+      dE = E_new - E_old
+      ! END IF
       accept_step = (dE .lt. BITSSLBFGS_DEMAX)
     END FUNCTION
 
