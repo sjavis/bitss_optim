@@ -26,11 +26,12 @@
 ! POTENTIAL(COORDS1, E, G1, .TRUE., .FALSE., RMS, .FALSE., .FALSE.
       SUBROUTINE POTENTIAL (COORDS,E,G,GTEST, STEST, RMS, PTEST,BOXTEST)
       IMPLICIT NONE
-      USE KEY, ONLY: NOPT
-      INTEGER  J1, J2, J3, J4
+      USE COMMONS, ONLY: NOPT
+      INTEGER  J1, J2, J3, J4, N
       LOGICAL GTEST,STEST, PTEST, BOXTEST
       DOUBLE PRECISION COORDS(NOPT), E, G(NOPT), TEMP, DIST,
-     1                 VNEW(3*NOPT), R, RR(NOPT,NOPT), ERMR(NOPT,NOPT), ERMRM(NOPT,NOPT), ERMRT(NOPT,NOPT)
+     1                 VNEW(NOPT), R, RR(NOPT,NOPT), ERMR(NOPT,NOPT), ERMRM(NOPT,NOPT), ERMRT(NOPT,NOPT),
+     2                 X(NOPT), RHO, P2, RMS
 
       P2=0.0D0
       DO J1=1,N
@@ -45,7 +46,7 @@
             DIST=DSQRT(DIST)
             TEMP=DEXP(-RHO*(DIST-1.0D0))
             P2=P2+TEMP*(TEMP-2.0)
-            IF (GTEST.OR.STEST) THEN
+            IF (GTEST) THEN
                R=RHO*DIST
                RR(J2,J1)=1.0D0/R
                ERMR(J2,J1)=TEMP
@@ -62,7 +63,7 @@
       IF (.NOT.GTEST) RETURN
       CALL MG(N, X, VNEW, RHO, RR, ERMR, ERMRM)
 
-      IF (.NOT.STEST) RETURN
+
       ! CALL MS(N, X, RHO, RR, ERMR, ERMRM, ERMRT)
 
       RETURN
