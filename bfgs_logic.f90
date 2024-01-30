@@ -41,7 +41,7 @@ MODULE bitss_lbfgs
       CALL allocate_quench()
 
       x = coords
-      CALL BITSS_EG(x, e, g)
+      CALL bitss_eg(x, e, g)
       rms = NORM2(g)/SQRT(DBLE(n))
       e_initial = e
 
@@ -125,12 +125,13 @@ MODULE bitss_lbfgs
       ! decrease step size until it is accepted
       DO n_decrease = 1, 10
         x = x0 + stp
-        CALL BITSS_EG(x, e)
+        CALL bitss_e(x, e)
 
         ! If the energy rise is too great then reduce step size.
-        IF (accept_step(e, e0)) RETURN
+        IF (accept_step(e, e0)) EXIT
         stp = stp / 10d0
       END DO
+      CALL bitss_eg(x, e, g)
     END SUBROUTINE adjust_step_size
 
 
