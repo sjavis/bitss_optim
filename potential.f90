@@ -11,8 +11,10 @@ SUBROUTINE POTENTIAL(x, e, v, vflag, STEST, RMS, PTEST,BOXTEST)
 
   peak_args(1,:) = [-3., -1.4, 0., 1., 1.]
   peak_args(2,:) = [-2.,  1.4, 0., 1., 1.]
-  peak_args(2,:) = [-1., 0.07, 1., 1., 1.]
+  peak_args(3,:) = [-1., 0.07, 1., 1., 1.]
 
+  e = 0
+  v = [0,0]
   do i = 1, 3
     args = peak_args(i,:)
 

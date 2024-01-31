@@ -506,7 +506,7 @@ MODULE KEY
 
 ! SJA> variables for BITSS transition state search
       LOGICAL :: BITSST
-      INTEGER :: BITSSMAXITER
+      INTEGER :: BITSSMAXITER, BITSS_COEFITER
       REAL(KIND = REAL64) :: BITSSSTEP, BITSSSTOP, BITSSALPHA, BITSSBETA
 ! DEMAX, Convergence, m (histsize), max_iter
       INTEGER :: BITSSLBFGS_m, BITSSLBFGS_maxiter

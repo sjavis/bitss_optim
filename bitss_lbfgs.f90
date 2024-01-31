@@ -28,10 +28,9 @@ MODULE bitss_lbfgs
 
 
     FUNCTION minimise(coords)
-      USE KEY, ONLY : BITSSLBFGS_MAXITER
+      USE KEY, ONLY : BITSS_COEFITER
       DOUBLE PRECISION :: COORDS(2*nopt)
       LOGICAL :: minimise
-      DOUBLE PRECISION :: e, g(2*nopt)
       CALL allocate_quench()
 
       x = coords
@@ -40,7 +39,8 @@ MODULE bitss_lbfgs
       e_initial = e
 
       lbfgs_iter = 1
-      DO WHILE ((lbfgs_iter <= BITSSLBFGS_MAXITER) .and. (.not. check_convergence()))
+      open(10, file="log.txt", position="append")
+      DO WHILE ((lbfgs_iter <= BITSS_COEFITER) .and. (.not. check_convergence()))
         ! Assign copies
         e0 = e
         x0 = x
@@ -50,6 +50,7 @@ MODULE bitss_lbfgs
         CALL get_step() ! Get the search direction
         CALL adjust_step_size() ! Perform a simple linesearch
         CALL bitss_eg(x, e, g)
+        write(10,*) x
 
         ! Update the working arrays
         s(:,point) = x - x0
@@ -59,6 +60,9 @@ MODULE bitss_lbfgs
         rms = NORM2(g)/SQRT(DBLE(2*nopt))
         lbfgs_iter = lbfgs_iter + 1
       END DO
+      close(10)
+
+      coords = x
       minimise = check_convergence()
     END FUNCTION minimise
 
@@ -68,7 +72,7 @@ MODULE bitss_lbfgs
       DOUBLE PRECISION :: H0, q(2*nopt), a(2*BITSSLBFGS_m), b
 
       IF (lbfgs_iter == 1) THEN
-        H0 = 1 / NORM2(g)
+        H0 = 1d-10
         stp = - H0 * g
 
       ELSE
@@ -103,7 +107,9 @@ MODULE bitss_lbfgs
       DOUBLE PRECISION :: step_size
 
       step_size = NORM2(stp)
-      IF (step_size .gt. BITSSLBFGS_maxstep) stp = stp * BITSSLBFGS_maxstep / step_size
+      IF ((BITSSLBFGS_maxstep > 0) .and. (step_size > BITSSLBFGS_maxstep)) THEN
+        stp = stp * BITSSLBFGS_maxstep / step_size
+      END IF
 
       ! decrease step size until it is accepted
       DO n_decrease = 1, 10
@@ -112,7 +118,9 @@ MODULE bitss_lbfgs
 
         ! If the energy rise is too great then reduce step size.
         IF (accept_step(e, e0)) EXIT
-        stp = stp / 10d0
+        x = x0 - stp
+        CALL bitss_e(x, e)
+        stp = stp / 1d0
       END DO
     END SUBROUTINE adjust_step_size
 
